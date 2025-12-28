@@ -4,12 +4,12 @@ from time import perf_counter
 from statistics import mean
 
 URL = "http://127.0.0.1:8000/reports/transactions/"
-N = 10
+N = 2
 TIMEOUT = 100  # seconds
 
 
 class LoadTester:
-    def __init__(self, url: str, n: int = 10, timeout: int = 10, verbose: bool = True):
+    def __init__(self, url: str, n: int = 2, timeout: int = 100, verbose: bool = True):
         self.url = url
         self.n = n
         self.timeout = timeout
@@ -21,23 +21,23 @@ class LoadTester:
         start = perf_counter()
         try:
             r = requests.get(self.url, timeout=self.timeout)
-            elapsed_ms = (perf_counter() - start) * 1000
+            elapsed_s = perf_counter() - start
 
             result = {
                 "i": i,
                 "ok": 200 <= r.status_code < 300,
                 "status": r.status_code,
-                "ms": elapsed_ms,
+                "s": elapsed_s,
                 "error": None,
             }
 
         except requests.RequestException as e:
-            elapsed_ms = (perf_counter() - start) * 1000
+            elapsed_s = perf_counter() - start
             result = {
                 "i": i,
                 "ok": False,
                 "status": None,
-                "ms": elapsed_ms,
+                "s": elapsed_s,
                 "error": f"{type(e).__name__}: {e}",
             }
 
@@ -46,9 +46,9 @@ class LoadTester:
             self.results.append(result)
             if self.verbose:
                 if result["error"]:
-                    print(f"[{i:02d}] ERROR  {result['ms']:.2f} ms  {result['error']}")
+                    print(f"[{i:02d}] ERROR  {result['s']:.2f} s  {result['error']}")
                 else:
-                    print(f"[{i:02d}] {result['status']}    {result['ms']:.2f} ms")
+                    print(f"[{i:02d}] {result['status']}    {result['s']:.2f} s")
 
     def run(self) -> None:
         threads = []
@@ -67,11 +67,11 @@ class LoadTester:
         success = sum(1 for r in results if r["ok"])
         failed = total - success
 
-        # Latencies
-        latencies = [r["ms"] for r in results]
-        avg_ms = mean(latencies) if latencies else 0.0
-        max_ms = max(latencies) if latencies else 0.0
-        min_ms = min(latencies) if latencies else 0.0
+        # Latencies (seconds)
+        latencies = [r["s"] for r in results]
+        avg_s = mean(latencies) if latencies else 0.0
+        max_s = max(latencies) if latencies else 0.0
+        min_s = min(latencies) if latencies else 0.0
 
         # Status breakdown
         status_counts = {}
@@ -85,7 +85,7 @@ class LoadTester:
         print(f"Timeout: {self.timeout}s")
         print("-" * 48)
         print(f"Success: {success}/{total} | Failed: {failed}/{total}")
-        print(f"Latency (ms): avg={avg_ms:.2f}  min={min_ms:.2f}  max={max_ms:.2f}")
+        print(f"Latency (s): avg={avg_s:.2f}  min={min_s:.2f}  max={max_s:.2f}")
         print(f"Status counts: {status_counts}")
         print("=" * 48)
 
@@ -95,12 +95,6 @@ class LoadTester:
             print("\nFailures:")
             for r in failures:
                 if r["error"]:
-                    print(f"  - [{r['i']:02d}] ERROR  {r['ms']:.2f} ms  {r['error']}")
+                    print(f"  - [{r['i']:02d}] ERROR  {r['s']:.2f} s  {r['error']}")
                 else:
-                    print(f"  - [{r['i']:02d}] {r['status']}    {r['ms']:.2f} ms")
-
-
-if __name__ == "__main__":
-    tester = LoadTester(url=URL, n=N, timeout=TIMEOUT, verbose=True)
-    tester.run()
-    tester.report()
+                    print(f"  - [{r['i']:02d}] {r['status']}    {r['s']:.2f} s")

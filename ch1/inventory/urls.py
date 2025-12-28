@@ -6,4 +6,5 @@ urlpatterns = [
     path('transactions/',SalesDetailsView.as_view(), name='sales-details'),
     path('transactions/items/',ItemTransactionsView.as_view(), name='item-transactions'),
     path('transactions/orders/',OrderDetailsView.as_view(), name='order-transactions'),
+    path('items/',ItemsReportView.as_view(), name='items'),
 ]
